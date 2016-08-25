@@ -57,19 +57,75 @@ this fork of [ndndump](https://github.com/charifmahmoudi/ndndump) enable the gen
 
 ## Running the setup script
 
-If you have all the dependencies installed simply clone this repository and run:
+to install only one component (ndndump for instance)
 
-    sudo ./install.sh -i
+    sudo ./install.sh -d
 
-else if you don't have the dependencies:
+To install the full stack :
 
-    sudo ./install.sh -mrfti
+    sudo ./install.sh -mrftids
+    
+To list the possible options 
 
-### Verification
+	./install.sh
 
-You can use these steps to verify your installation:
+## Verification
 
-1. Issue the command: `sudo minindn --experiment=pingall --nPings=50`
-2. When the `mininet>` CLI prompt appears, the experiment has finished. On the Mini-NDN CLI, issue the command `exit` to exit the experiment.
-3. Issue the command: `grep -c content /tmp/*/ping-data/*.txt`. Each file should report a count of 50.
-4. Issue the command: `grep -c timeout /tmp/*/ping-data/*.txt`. Each file should report a count of 0.
+You can use these steps to verify your installation.
+
+### NFD
+
+set up the configuration file
+
+	sudo cp /usr/local/etc/ndn/nfd.conf.sample /usr/local/etc/ndn/nfd.conf
+
+create a log folder 
+
+	sudo mkdir -p /var/log/ndn/nfd
+	sudo chown -R $USER /var/log/ndn/nfd
+
+edit the start script
+
+	sudo nano /usr/local/bin/nfd-start
+
+replace the start command
+	
+	sudo /usr/local/bin/nfd &
+	
+with
+
+	sudo /usr/local/bin/nfd 2>> /var/log/nfd/nfd.log&
+	
+start the daemon
+
+	nfd-start
+
+show the status
+
+	nfd-status
+
+### ndnSIM
+
+go to ndnSIM folder
+	
+	cd ndnSIM/ns-3
+	
+run a sample experiment
+	
+	NS_LOG=ndn.Producer:ndn.Consumer ./waf --run=ndn-simple --vis
+
+
+### Mini-NDN
+
+Run the ping experiment
+
+	sudo minindn --experiment=pingall --nPings=50
+	
+exit mininet once the experiment is finished
+
+	mininet>exit
+	
+check the results in /tmp for example
+	
+	cat /tmp/a/ping-data/a.txt
+	

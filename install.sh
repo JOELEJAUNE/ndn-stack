@@ -153,7 +153,7 @@ function ndnsim {
 #	git clone https://github.com/named-data/ndn-cxx.git ndn-cxx
 	git clone https://github.com/cawka/ns-3-dev-ndnSIM.git ns-3
 	git clone https://github.com/cawka/pybindgen.git pybindgen
-	git clone https://github.com/named-data/ndnSIM.git ns-3/src/ndnSIM
+	git clone --recursive https://github.com/named-data/ndnSIM.git ns-3/src/ndnSIM
 	
 #	cd ndnSIM/ndn-cxx
 #	./waf configure
@@ -184,18 +184,23 @@ function minindn {
         pysetup="true"
     fi
     install_dir="/usr/local/etc/mini-ndn/"
-
+    
+    git clone https://github.com/named-data/mini-ndn
+	cd mini-ndn
+	rm -f install.sh
     sudo mkdir -p "$install_dir"
     sudo cp ndn_utils/client.conf.sample "$install_dir"
     sudo cp ndn_utils/nlsr.conf "$install_dir"
     sudo cp ndn_utils/topologies/default-topology.conf "$install_dir"
     sudo cp ndn_utils/topologies/minindn.testbed.conf "$install_dir"
     sudo python setup.py install
+    
+    cd ../
 }
 
 
 function usage {
-    printf '\nUsage: %s [-mfrti]\n\n' $(basename $0) >&2
+    printf '\nUsage: %s [-mfrtids]\n\n' $(basename $0) >&2
 
     printf 'options:\n' >&2
     printf -- ' -f: install NFD\n' >&2
@@ -211,7 +216,7 @@ function usage {
 if [[ $# -eq 0 ]]; then
     usage
 else
-    while getopts 'mfrti' OPTION
+    while getopts 'mfrtids' OPTION
     do
         case $OPTION in
         f)    forwarder;;
