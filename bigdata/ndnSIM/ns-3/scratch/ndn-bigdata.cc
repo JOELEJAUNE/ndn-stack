@@ -67,26 +67,26 @@ namespace ns3 {
  */
 int nextPrime(int a)
 {
-    int i, j, count;
-    for (i = a + 1; 1; i++)
-    {
-        count = 0;
-        for (j = 2;j < i; j++)
-        {
-            if (i%j == 0) // found a divisor
-            {
-                count++;
-                break;  // break for (j = 2,j < i; j++) loop
-                        // this will speed up a bit
-            }
-        }
-        if (count == 0)
-        {
-            return i;
-            //break; // break for (i = a + 1; 1; i++) loop
-                     // break is not needed because return will stop execution of this function
-        }
-    }
+	int i, j, count;
+	for (i = a + 1; 1; i++)
+	{
+		count = 0;
+		for (j = 2;j < i; j++)
+		{
+			if (i%j == 0) // found a divisor
+			{
+				count++;
+				break;  // break for (j = 2,j < i; j++) loop
+				// this will speed up a bit
+			}
+		}
+		if (count == 0)
+		{
+			return i;
+			//break; // break for (i = a + 1; 1; i++) loop
+			// break is not needed because return will stop execution of this function
+		}
+	}
 }
 
 int
@@ -97,7 +97,7 @@ main(int argc, char* argv[])
 	uint32_t dimension = 5;
 	uint32_t nbSegments = 200;
 	// std::to_string(nbStorages)
-			// Read optional command-line parameters (e.g., enable visualizer with ./waf --run=<> --visualize
+	// Read optional command-line parameters (e.g., enable visualizer with ./waf --run=<> --visualize
 	CommandLine cmd;
 	cmd.AddValue ("replication", "Replication factor", replication);
 	cmd.AddValue ("nbStorages", "Number of Storages", nbStorages);
@@ -107,56 +107,56 @@ main(int argc, char* argv[])
 
 
 	//AnnotatedTopologyReader topologyReader("", 25);
-	 // topologyReader.SetFileName("src/ndnSIM/apps/bigdata-topo-grid-3x3.txt");
-	  //topologyReader.Read();
-//
-//#    (0) ------ (S1) ----- ( 2)------ ( 3) ----- (S4)
-//#     |           |          |          |          |
-//#    ( 5) ------ (S6) ----- ( 7)------ ( 8) ----- ( 9)
-//#     |           |          |          |          |
-//#    (10) ------ (11) ----- (12)------ (13) ----- (S14)
-//#     |           |          |          |          |
-//#    (15) ------ (16) ----- (17)------ (18) ----- (S19)
-//#     |           |          |          |          |
-//#    (20) ------ (21) ----- (22)------ (23) ----- (24)
+	// topologyReader.SetFileName("src/ndnSIM/apps/bigdata-topo-grid-3x3.txt");
+	//topologyReader.Read();
+	//
+	//#    (0) ------ (S1) ----- ( 2)------ ( 3) ----- (S4)
+	//#     |           |          |          |          |
+	//#    ( 5) ------ (S6) ----- ( 7)------ ( 8) ----- ( 9)
+	//#     |           |          |          |          |
+	//#    (10) ------ (11) ----- (12)------ (13) ----- (S14)
+	//#     |           |          |          |          |
+	//#    (15) ------ (16) ----- (17)------ (18) ----- (S19)
+	//#     |           |          |          |          |
+	//#    (20) ------ (21) ----- (22)------ (23) ----- (24)
 
 	const int max = (const int) dimension;
 
-	  // Creating 3x3 topology
-	    PointToPointHelper p2p;
-	    PointToPointGridHelper grid(max, max, p2p);
-	    grid.BoundingBox(100, 100, 200, 200);
+	// Creating 3x3 topology
+	PointToPointHelper p2p;
+	PointToPointGridHelper grid(max, max, p2p);
+	grid.BoundingBox(100, 100, 200, 200);
 
-	    NodeContainer nodes;
-	    for (int i = 0; i < max; ++i) {
-			for (int j = 0; j < max; ++j) {
-				nodes.Add(grid.GetNode(i, j));
-			}
+	NodeContainer nodes;
+	for (int i = 0; i < max; ++i) {
+		for (int j = 0; j < max; ++j) {
+			nodes.Add(grid.GetNode(i, j));
 		}
+	}
 
 
 
-	  // Install NDN stack on all nodes
-	  ndn::StackHelper ndnHelper;
-	  ndnHelper.SetOldContentStore("ns3::ndn::cs::Lru", "MaxSize",
-	                                 "100"); // default ContentStore parameters
+	// Install NDN stack on all nodes
+	ndn::StackHelper ndnHelper;
+	ndnHelper.SetOldContentStore("ns3::ndn::cs::Lru", "MaxSize",
+			"100"); // default ContentStore parameters
 
-	  ndnHelper.InstallAll();
+	ndnHelper.InstallAll();
 
-	  // Set BestRoute strategy
+	// Set BestRoute strategy
 
-	  //topologyReader.ApplyOspfMetric();
+	//topologyReader.ApplyOspfMetric();
 
-	    ndn::GlobalRoutingHelper ndnGlobalRoutingHelper;
-	    ndnGlobalRoutingHelper.InstallAll();
+	ndn::GlobalRoutingHelper ndnGlobalRoutingHelper;
+	ndnGlobalRoutingHelper.InstallAll();
 
-	    ndn::StrategyChoiceHelper::InstallAll("/lacl/storage", "/localhost/nfd/strategy/bigdata");
+	ndn::StrategyChoiceHelper::InstallAll("/lacl/storage", "/localhost/nfd/strategy/bigdata");
 
 
-	  // Getting containers for the consumer/producer
-	  //Ptr<Node> producer = Names::Find<Node>("Node8");
-	  //NodeContainer nodes;
-	  //consumerNodes.Add(Names::Find<Node>("Node0"));
+	// Getting containers for the consumer/producer
+	//Ptr<Node> producer = Names::Find<Node>("Node8");
+	//NodeContainer nodes;
+	//consumerNodes.Add(Names::Find<Node>("Node0"));
 
 
 	ndn::AppHelper adminHelper("ns3::ndn::Admin");
@@ -179,24 +179,32 @@ main(int argc, char* argv[])
 		storageHelperA.SetAttribute("PrefixCommand", StringValue("/lacl/storage"));
 		storageHelperA.Install(nodes.Get(i));
 	}
-//	storageHelperA.Install(grid.GetNode(0, 0));//Names::Find<Node>("Node0")); // last node
-//	storageHelperA.Install(grid.GetNode(0, 2));//Names::Find<Node>("Node0")); // last node
-//	storageHelperA.Install(grid.GetNode(2, 1));//Names::Find<Node>("Node0")); // last node
+	//	storageHelperA.Install(grid.GetNode(0, 0));//Names::Find<Node>("Node0")); // last node
+	//	storageHelperA.Install(grid.GetNode(0, 2));//Names::Find<Node>("Node0")); // last node
+	//	storageHelperA.Install(grid.GetNode(2, 1));//Names::Find<Node>("Node0")); // last node
 
-//	// Storage B
-//	ndn::AppHelper storageHelperB("ns3::ndn::Storage");
-//	storageHelperB.SetAttribute("PrefixCommand", StringValue("/lacl/storage"));
-//	storageHelperB.Install(Names::Find<Node>("Node2")); // last node
-//
-//	// Storage C
-//	ndn::AppHelper storageHelperC("ns3::ndn::Storage");
-//	storageHelperC.SetAttribute("PrefixCommand", StringValue("/lacl/storage"));
-//	storageHelperC.Install(Names::Find<Node>("Node7")); // last node
+	//	// Storage B
+	//	ndn::AppHelper storageHelperB("ns3::ndn::Storage");
+	//	storageHelperB.SetAttribute("PrefixCommand", StringValue("/lacl/storage"));
+	//	storageHelperB.Install(Names::Find<Node>("Node2")); // last node
+	//
+	//	// Storage C
+	//	ndn::AppHelper storageHelperC("ns3::ndn::Storage");
+	//	storageHelperC.SetAttribute("PrefixCommand", StringValue("/lacl/storage"));
+	//	storageHelperC.Install(Names::Find<Node>("Node7")); // last node
 
 	Simulator::Stop(Seconds(1000.0));
 
-	ndn::L3RateTracer::InstallAll(std::string("/home/ndn/ndnSIM/ns-3/seg-data/segments-rate-trace-")+std::to_string(nbSegments)+std::string(".txt"), Seconds(0.5));
-	ndn::CsTracer::InstallAll(std::string("/home/ndn/ndnSIM/ns-3/seg-data/segments-cs-trace-")+std::to_string(nbSegments)+std::string(".txt"), Seconds(0.5));
+	ndn::L3RateTracer::InstallAll(std::string("../../bigdata/rate-trace-")
+		+std::to_string(replication)+std::string("_")
+		+std::to_string(nbStorages)+std::string("_")
+		+std::to_string(dimension)+std::string("_")
+		+std::to_string(nbSegments)+std::string(".txt"), Seconds(0.5));
+	ndn::CsTracer::InstallAll(std::string("../../bigdata/cs-trace-")
+		+std::to_string(replication)+std::string("_")
+		+std::to_string(nbStorages)+std::string("_")
+		+std::to_string(dimension)+std::string("_")
+		+std::to_string(nbSegments)+std::string(".txt"), Seconds(0.5));
 	//  L2RateTracer::InstallAll("drop-trace.txt", Seconds(0.5));
 	Simulator::Run();
 	Simulator::Destroy();

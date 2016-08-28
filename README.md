@@ -2,9 +2,11 @@ NDN Stack Installing Instructions
 ================================
 ## Hardware and OS environment 
 
-A laptop/desktop with a recent Linux distro (Ubuntu, Fedora) is needed.
+A laptop/desktop with a recent Linux distro (Ubuntu) is needed.
 We recommend Ubuntu. For this guide, the _Ubuntu 14.04 LTS_ was used.
 Also, note that you'll need administrative privileges.
+
+Thanks to the Mini-NDN team for the initial script
 
 ## Installing NDN
 

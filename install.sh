@@ -133,6 +133,11 @@ function mininet {
 }
 
 function ndnsim {
+	if [[ $cxx != true ]]; then
+        ndncxx
+        cxx="true"
+    fi
+    
     if [[ updated != true ]]; then
         $update
         updated="true"
@@ -165,7 +170,7 @@ function ndnsim {
 	./waf
 	
     cd ../ns-3
-	./waf configure --enable-examples  -d optimized
+	./waf configure --enable-examples
 	./waf
 	
     cd ../
