@@ -70,6 +70,20 @@ To install the full stack :
 To list the possible options 
 
 	./install.sh
+	
+The full list is 
+
+	Usage: install.sh [-mfrtids]
+
+	options:
+	 -f: install NFD
+	 -i: install mini-ndn
+	 -m: install mininet and dependencies
+	 -r: install NLSR
+	 -t: install tools
+	 -d: install ndndump
+	 -s: install ndnSIM and dependencies
+	
 
 ## Verification
 
@@ -96,7 +110,7 @@ replace the start command
 	
 with
 
-	sudo /usr/local/bin/nfd 2>> /var/log/nfd/nfd.log&
+	sudo /usr/local/bin/nfd 2>> /var/log/ndn/nfd/nfd.log&
 	
 start the daemon
 
