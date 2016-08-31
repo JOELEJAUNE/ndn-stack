@@ -27,9 +27,9 @@ BigdataRandomStrategy::~BigdataRandomStrategy()
 static bool
 canForwardToNextHop(bool rep, shared_ptr<pit::Entry> pitEntry, const fib::NextHop& nexthop)
 {
-	NFD_LOG_INFO("Testing Face" + nexthop.getFace()->getRemoteUri().toString());
+	//NFD_LOG_INFO("Testing Face" + nexthop.getFace()->getRemoteUri().toString());
 		if(rep && nexthop.getFace()->isLocal()){
-			NFD_LOG_INFO("Face rejected " + nexthop.getFace()->getRemoteUri().toString());
+		//	NFD_LOG_INFO("Face rejected " + nexthop.getFace()->getRemoteUri().toString());
 			return false;
 		}
 	return pitEntry->canForwardTo(*nexthop.getFace());
@@ -47,7 +47,9 @@ BigdataRandomStrategy::afterReceiveInterest(const Face& inFace, const Interest& 
 		shared_ptr<fib::Entry> fibEntry,
 		shared_ptr<pit::Entry> pitEntry)
 {
-	NFD_LOG_TRACE("afterReceiveInterest");
+	//NFD_LOG_TRACE("afterReceiveInterest");
+	NFD_LOG_TRACE("Forwarding request for interest " << interest.getName().toUri() << " from=" << inFace.getId());
+
 
 	if (pitEntry->hasUnexpiredOutRecords()) {
 		// not a new Interest, don't forward
@@ -75,7 +77,7 @@ BigdataRandomStrategy::afterReceiveInterest(const Face& inFace, const Interest& 
 	} while (!canForwardToNextHop(m_replicated, pitEntry, *selected));
 
 	// Check if this is a storage request
-	if (! m_replicated) {
+	if (! m_replicated && selected->getFace()->isLocal()) {
 		std::string prefix = "/lacl/storage";
 		std::size_t place = interest.getName().toUri().find(prefix);
 		if (place == 0) {
@@ -85,7 +87,7 @@ BigdataRandomStrategy::afterReceiveInterest(const Face& inFace, const Interest& 
 
 		}
 	}
-
+	NFD_LOG_TRACE("Forwarding request for interest " << interest.getName().toUri() << " to=" << selected->getFace()->getId());
 	this->sendInterest(pitEntry, selected->getFace());
 }
 
