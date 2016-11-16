@@ -92,7 +92,7 @@ int nextPrime(int a)
 int
 main(int argc, char* argv[])
 {
-	uint32_t replication = 1;
+	uint32_t replication = 2;
 	uint32_t nbStorages = 10;
 	uint32_t dimension = 5;
 	uint32_t nbSegments = 200;
@@ -169,8 +169,9 @@ main(int argc, char* argv[])
 
 
 	int lastPrime = 2;
+	int countStorage = 0; //get the number of storage initialized
 	// Storage A
-	for (int i = 1; i < (int)nbStorages; ++i) {
+	for (int i = 1; i < (int)dimension*dimension; ++i) {
 		if(i == lastPrime){
 			lastPrime = nextPrime(lastPrime);
 			continue;
@@ -178,6 +179,13 @@ main(int argc, char* argv[])
 		ndn::AppHelper storageHelperA("ns3::ndn::Storage");
 		storageHelperA.SetAttribute("PrefixCommand", StringValue("/lacl/storage"));
 		storageHelperA.Install(nodes.Get(i));
+
+        countStorage++;
+
+		if(countStorage == nbStorages){
+            break;      //break when we have the exact number of needed storages
+		}
+
 	}
 	//	storageHelperA.Install(grid.GetNode(0, 0));//Names::Find<Node>("Node0")); // last node
 	//	storageHelperA.Install(grid.GetNode(0, 2));//Names::Find<Node>("Node0")); // last node
