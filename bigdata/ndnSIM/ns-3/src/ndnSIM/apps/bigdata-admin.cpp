@@ -10,7 +10,8 @@
 #include "ns3/integer.h"
 #include "ns3/double.h"
 
-#include "model/ndn-app-face.hpp"
+//#include "model/ndn-app-face.hpp"
+#include "model/ndn-app-link-service.hpp"
 #include "helper/ndn-fib-helper.hpp"
 
 //#include "helper/ndn-global-routing-helper.hpp"
@@ -138,7 +139,8 @@ void Admin::SendInterest(std::string prefix) {
 	// Call trace (for logging purposes)
 	m_transmittedInterests(interest, this, m_face);
 
-	m_face->onReceiveInterest(*interest);
+	//m_face->onReceiveInterest(*interest);
+	m_appLink->onReceiveInterest(*interest);
 }
 
 void
@@ -248,7 +250,8 @@ void Admin::OnInterest(shared_ptr<const Interest> interest) {
 	data->wireEncode();
 
 	setTransmittedDatas(data);
-	m_face->onReceiveData(*data);
+	//m_face->onReceiveData(*data);
+	m_appLink->onReceiveData(*data);
 	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Data packet transmitted to th NFD "<< data->getName().toUri());
 }
 

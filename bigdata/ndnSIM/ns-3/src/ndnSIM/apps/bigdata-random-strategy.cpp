@@ -28,7 +28,8 @@ static bool
 canForwardToNextHop(bool rep, shared_ptr<pit::Entry> pitEntry, const fib::NextHop& nexthop)
 {
 	//NFD_LOG_INFO("Testing Face" + nexthop.getFace()->getRemoteUri().toString());
-		if(rep && nexthop.getFace()->isLocal()){
+		//if(rep && nexthop.getFace()->isLocal()){
+		if(rep && (nexthop.getFace()->getScope() == ndn::nfd::FACE_SCOPE_LOCAL)){
 		//	NFD_LOG_INFO("Face rejected " + nexthop.getFace()->getRemoteUri().toString());
 			return false;
 		}
@@ -77,7 +78,8 @@ BigdataRandomStrategy::afterReceiveInterest(const Face& inFace, const Interest& 
 	} while (!canForwardToNextHop(m_replicated, pitEntry, *selected));
 
 	// Check if this is a storage request
-	if (! m_replicated && selected->getFace()->isLocal()) {
+	//if (! m_replicated && selected->getFace()->isLocal()) {
+	if (! m_replicated && (selected->getFace()->getScope() == ndn::nfd::FACE_SCOPE_LOCAL)) {
 		std::string prefix = "/lacl/storage";
 		std::size_t place = interest.getName().toUri().find(prefix);
 		if (place == 0) {

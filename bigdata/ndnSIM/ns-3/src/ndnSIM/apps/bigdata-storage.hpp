@@ -7,6 +7,7 @@ class Storage;
 }
 #include "ns3/ndnSIM/model/ndn-common.hpp"
 #include "ndn-app.hpp"
+#include "ns3/ndnSIM/model/ndn-app-link-service.hpp"
 #include "bigdata-dataconsumer.h"
 #include "ns3/nstime.h"
 #include "ns3/ptr.h"
@@ -49,7 +50,7 @@ public:
 	TracedCallback<shared_ptr<const Data>, Ptr<App>, shared_ptr<Face>> getTransmittedDatas() const {
 		return m_transmittedDatas;
 	}
-	shared_ptr<AppFace> getFace() const {
+	shared_ptr<Face> getFace() const {
 		return m_face;
 	}
 	Ptr<Node> getNode() const;

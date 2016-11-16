@@ -11,8 +11,8 @@
 #include "ns3/double.h"
 
 #include "helper/ndn-fib-helper.hpp"
-#include "model/ndn-app-face.hpp"
-
+//#include "model/ndn-app-face.hpp"
+#include "model/ndn-app-link-service.hpp"
 
 #include "model/ndn-ns3.hpp"
 #include "ns3/node.h"
@@ -191,7 +191,8 @@ void Storage::SendInterest(std::string prefix) {
 	// Call trace (for logging purposes)
 	m_transmittedInterests(interest, this, m_face);
 
-	m_face->onReceiveInterest(*interest);
+//	m_face->onReceiveInterest(*interest);
+	m_appLink->onReceiveInterest(*interest); 
 
 }
 void Storage::OnInterest(shared_ptr<const Interest> interest) {
@@ -300,7 +301,8 @@ void Storage::OnInterestResponse(shared_ptr<const Interest> interest) {
 	data->wireEncode();
 
 	setTransmittedDatas(data);
-	m_face->onReceiveData(*data);
+//	m_face->onReceiveData(*data);
+	m_appLink->onReceiveData(*data);
 	//state = &(state->OnInterest(interest));
 	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") responding with Data: " << data->getName());
 }

@@ -21,7 +21,9 @@
 #include "ns3/object.h"
 
 #include "utils/ndn-ns3-packet-tag.hpp"
-#include "model/ndn-app-face.hpp"
+//#include "model/ndn-app-face.hpp"
+#include "model/ndn-app-link-service.hpp"
+#include "model/null-transport.hpp"
 #include "utils/ndn-rtt-mean-deviation.hpp"
 
 #include <boost/lexical_cast.hpp>
