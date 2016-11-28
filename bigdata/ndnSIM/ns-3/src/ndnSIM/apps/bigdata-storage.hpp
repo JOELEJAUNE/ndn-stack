@@ -38,6 +38,16 @@ public:
 	  virtual void
 	  OnData(std::shared_ptr<const ndn::Data> contentObject);
 	virtual void OnDataRetrieved(DataConsumer* consumer);
+	virtual void OnTimeout(DataConsumer* consumer);
+
+	int getLastSegment() const {
+		return m_last_segment;
+	}
+
+	int getRepFactor() const {
+		return m_rep_factor;
+	}
+
 	void setTransmittedInterests(shared_ptr<const Interest> interest) {
 		m_transmittedInterests(interest,this,m_face);
 	}
@@ -71,11 +81,12 @@ protected:
 
 protected:
 
+    uint32_t m_last_segment;
+    uint32_t m_rep_factor;
 	Name m_prefix_command;
 	Name m_prefix_data= Name("NO_DATA");
 
 protected:
-
 
 	uint32_t m_virtualPayloadSize = 1024;
 	Time m_freshness;
@@ -83,6 +94,8 @@ protected:
 	Name m_keyLocator = Name("/unique/key/locator");
 	//std::map<std::string, DataConsumer*> consumers;
 	std::list<DataConsumer*> consumers;
+
+	std::list<string> heartbeatList;
 };
 
 

@@ -27,6 +27,7 @@
 //#include "helper/ndn-global-routing-helper.hpp"
 #include "ns3/ndnSIM-module.h"
 
+
 NS_LOG_COMPONENT_DEFINE("ndn.Storage");
 
 
@@ -74,7 +75,7 @@ Storage::StartApplication()
 
 	//FibHelper::AddRoute(GetNode(), m_prefix, m_face, 0);
 	//this->state = new StorageFirstState(*this, GetNode(), m_prefix_command);
-	NS_LOG_INFO("node(" << GetNode()->GetId() << ") Advertizing prefix " << m_prefix_command );
+	NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Advertizing prefix " << m_prefix_command );
 	FibHelper::AddRoute(GetNode(), m_prefix_command, m_face, 0);
 	ndn::GlobalRoutingHelper ndnGlobalRoutingHelper;
 	NodeContainer nodes;
@@ -82,7 +83,7 @@ Storage::StartApplication()
 	ndnGlobalRoutingHelper.AddOrigins(m_prefix_command.toUri(),nodes );
 	ndn::GlobalRoutingHelper::CalculateRoutes();
 	m_freshness = Seconds (10.0);
-	NS_LOG_INFO("node(" << GetNode()->GetId() << ") Storage application started "  );
+	NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Storage application started "  );
 }
 
 void
@@ -90,26 +91,26 @@ Storage::StopApplication()
 {
 	NS_LOG_FUNCTION_NOARGS();
 
-	NS_LOG_INFO("node(" << GetNode()->GetId() << ") Storage application Stopping "  );
+	NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Storage application Stopping "  );
 
 	for (std::list<DataConsumer*>::iterator it=consumers.begin(); it!=consumers.end(); ++it){
 		delete (*it);
 		consumers.erase(it);
 	}
 	App::StopApplication();
-	NS_LOG_INFO("node(" << GetNode()->GetId() << ") Storage application stopped "  );
+	NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Storage application stopped "  );
 }
 
 void Storage::OnDataRetrieved(DataConsumer* consumer){
-	NS_LOG_INFO("node(" << GetNode()->GetId() << ") Data packet received " << consumer->getInterestName().toUri() );
+	NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Data packet received " << consumer->getInterestName().toUri() );
 	if (!m_active){
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") Storage NOT active ignoring the packet " << consumer->getInterestName().toUri() );
+		NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Storage NOT active ignoring the packet " << consumer->getInterestName().toUri() );
 		return;
 	}
 
 	if(!consumer->isCommand()){
 		// consumer->getInterestName()  /lacl/data ?
-		NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Data file " << consumer->getInterestName().toUri() <<" advertised and stored on the local storage" );
+		NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Data file " << consumer->getInterestName().toUri() <<" advertised and stored on the local storage" );
 		FibHelper::AddRoute(GetNode(), consumer->getInterestName(), m_face , 0);
 		ndn::GlobalRoutingHelper ndnGlobalRoutingHelper;
 		NodeContainer nodes;
@@ -121,19 +122,94 @@ void Storage::OnDataRetrieved(DataConsumer* consumer){
 	}
 
 	if (consumer->isNeedsAction()) {
-		std::string stop	= consumer->getInterestName().toUri()+"/stop/0/"+std::to_string(consumer->getSeqMax() - 1);
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") Creating a Stop command Consumer " << stop );
-		DataConsumer* dataConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), stop);
-		dataConsumer->processCommand();
+        if(consumer->isStopInterestDone()==false){
+            consumer->setStopInterestDone(true); //use to avoid sending stop interest by more than one node storage
+            std::string stop	= consumer->getInterestName().toUri()+"/stop/0/"+std::to_string(consumer->getSeqMax() - 1);
+            NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Creating a Stop command Consumer " << stop );
+            DataConsumer* dataConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), stop);
+            dataConsumer->processCommand();
 		//Simulator::Schedule(Seconds(0.0), &Storage::SendInterest, this, dataprefix);
+		}
 
 	}
 
 
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Cleaning the Consumer "<< consumer->getInterestName().toUri() );
+	NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Cleaning the Consumer "<< consumer->getInterestName().toUri() );
 	consumers.remove(consumer);
 	delete consumer;
 
+
+
+}
+/*
+void
+Storage::OnTimeout(DataConsumer* consumer)
+{
+
+
+    NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") heartbeat timeout for " << consumer->getInterestName().toUri() );
+
+    string heartbeatFactor(1, consumer->getInterestName().toUri().at( consumer->getInterestName().toUri().length() - 1 )); //get the replication factor from the InterestName
+
+    string dataPrefix = consumer->getInterestName().toUri().substr(0, consumer->getInterestName().toUri().find("heartbeat") - 1); //get the dataPrefix from the heartbeat interest
+
+    std::string replicationPrefix(m_prefix_command.toUri()+"/"+std::to_string(m_rep_factor)+"/"+heartbeatFactor+dataPrefix+"/0/"+std::to_string(m_last_segment));
+
+
+    NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Forwarding the replication command " << replicationPrefix );
+
+    DataConsumer* repConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), replicationPrefix);
+    repConsumer->processCommand();
+    consumers.remove(consumer);
+    delete consumer;
+
+
+}
+*/
+void
+Storage::OnTimeout(DataConsumer* consumer)
+{
+    //if heartbeat send the replication request
+    if(consumer->getInterestName().toUri().find("heartbeat") != std::string::npos){
+
+        NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") heartbeat timeout for " << consumer->getInterestName().toUri() );
+
+        //string heartbeatFactor(1, consumer->getInterestName().toUri().at( consumer->getInterestName().toUri().length() - 1 ));
+            string heartbeatFactor(consumer->getInterestName().toUri().substr(consumer->getInterestName().toUri().find_last_of("/")+1));                                   //get the replication factor from the InterestName
+
+        string dataPrefix = consumer->getInterestName().toUri().substr(0, consumer->getInterestName().toUri().find("heartbeat") - 1); //get the dataPrefix from the heartbeat interest
+
+        std::string replicationPrefix(m_prefix_command.toUri()+"/"+std::to_string(m_rep_factor)+"/"+heartbeatFactor+dataPrefix+"/0/"+std::to_string(m_last_segment));
+
+
+        NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Forwarding the replication command " << replicationPrefix );
+
+        DataConsumer* repConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), replicationPrefix);
+        repConsumer->processCommand();
+        consumers.remove(consumer);
+        delete consumer;
+
+
+    }else{
+
+        //if storage request; check the heartbeat related to; when this interest will timeout, the replication will be sent
+        if(consumer->getInterestName().toUri().find("storage") != std::string::npos){
+
+            string suffix ="/%FE%00";
+
+            StorageInfo storageInfo(consumer->getInterestName().toUri() + suffix, m_prefix_command.toUri());
+
+            std::string heartbeatPrefix(storageInfo.getDataPrefix()+"/heartbeat/"+storageInfo.getReplication());
+
+            NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") check for the replication using heatbeat interest " << heartbeatPrefix << " before sending replication");
+
+            DataConsumer* heatConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), heartbeatPrefix);
+            heatConsumer->processCommand();
+            consumers.remove(consumer);
+            delete consumer;
+
+        }
+    }
 
 
 }
@@ -141,9 +217,9 @@ void Storage::OnDataRetrieved(DataConsumer* consumer){
 void
 Storage::OnData(shared_ptr<const Data> data)
 {
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Data packet received " << data->getName().toUri() );
+	NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Data packet received " << data->getName().toUri() );
 	if (!m_active){
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") Storage NOT active ignoring the packet " << data->getName().toUri() );
+		NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Storage NOT active ignoring the packet " << data->getName().toUri() );
 		return;
 	}
 	App::OnData(data); // tracing inside
@@ -153,13 +229,13 @@ Storage::OnData(shared_ptr<const Data> data)
 	bool consumed = false;
 	for (std::list<DataConsumer*>::iterator it=consumers.begin(); it!=consumers.end(); ++it){
 		if((*it)->OnData(data) == 1){
-			NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Data consumed by  " << (*it)->getInterestName().toUri() );
+			NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Data consumed by  " << (*it)->getInterestName().toUri() );
 			consumed = true;
 			break;
 		}
 	}
 	if(!consumed){
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") No consumer for data packet  " << data->getName().toUri() );
+		NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") No consumer for data packet  " << data->getName().toUri() );
 	}else{
 		//		if(data->getName().toUri().find(m_prefix_command.toUri()) == 0) {
 		//				NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Switching to Local Face 0 " << m_prefix_command.toUri());
@@ -171,9 +247,9 @@ Storage::OnData(shared_ptr<const Data> data)
 
 }
 void Storage::SendInterest(std::string prefix) {
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Request for sending Interest " << prefix );
+	NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Request for sending Interest " << prefix );
 	if (!m_active){
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") Storage NOT active ignoring the request " << prefix );
+		NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Storage NOT active ignoring the request " << prefix );
 		return;
 	}
 	/////////////////////////////////////
@@ -186,54 +262,135 @@ void Storage::SendInterest(std::string prefix) {
 	interest->setNonce(rand->GetValue(0, std::numeric_limits<uint32_t>::max()));
 	interest->setInterestLifetime(ndn::time::seconds(10));
 
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Sending Interest packet for " << *interest);
+	NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Sending Interest packet for " << *interest);
 
 	// Call trace (for logging purposes)
 	m_transmittedInterests(interest, this, m_face);
 
 //	m_face->onReceiveInterest(*interest);
-	m_appLink->onReceiveInterest(*interest); 
+	m_appLink->onReceiveInterest(*interest);
 
 }
 void Storage::OnInterest(shared_ptr<const Interest> interest) {
-	NS_LOG_INFO("node(" << GetNode()->GetId() << ") Interest packet received " << interest->getName().toUri() );
+	NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Interest packet received " << interest->getName().toUri() );
 	if (!m_active){
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") Storage NOT active ignoring the packet " << interest->getName().toUri() );
+		NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Storage NOT active ignoring the packet " << interest->getName().toUri() );
 		return;
 	}
+
+	//check if it's a heartbeat interest; then check if the name is not advertised by the storage ignore it
+	if(interest->getName().toUri().find("heartbeat") != std::string::npos){
+
+
+        for (std::list<string>::iterator it=heartbeatList.begin(); it!=heartbeatList.end(); ++it){
+
+            if(interest->getName().toUri().find(*it) != 0){
+                NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Storage ignoring the non relevant heartbeat interest " << interest->getName().toUri() );
+                return;
+			}
+        }
+    }
+
+
+
 
 	App::OnInterest(interest); // tracing inside
 
 	if (interest->getName().toUri().find(m_prefix_data.toUri()) != 0
 			&& interest->getName().toUri().find(m_prefix_command.toUri()) != 0) {
 		// case3: /autre/chose
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") Ignoring unrecognized interest " << interest->getName().toUri()
+		NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Ignoring unrecognized interest " << interest->getName().toUri()
 				<< " against " << m_prefix_data.toUri());
 		return ;
 	}
+
+	// check if it's a heat, if the name is advertised by this node
+     //Ptr<nfd::Fib> fib = GetNode ()->GetObject<nfd::Fib> ();
+
+
 	OnInterestResponse(interest);
+
 	std::string prefix = m_prefix_command.toUri();
+	std::size_t place = interest->getName().toUri().find(prefix);
+	if (place == 0) {
+
+        NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Interest is a storage command " << interest->getName().toUri() );
+        StorageInfo storageInfo(interest->getName().toUri(), m_prefix_command.toUri());
+
+        //create and advertise the heartbeat for this replication
+        std::string heartbeatName(storageInfo.getDataPrefix()+"/heartbeat/"+storageInfo.getReplication());
+
+        //NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") heartbeat name:  " << heartbeatName );
+
+        //store the replication information
+        m_rep_factor    = stoi(storageInfo.getReplicationFactor());
+        m_last_segment  = stoi(storageInfo.getLastSegment());
+        m_prefix_data = Name(storageInfo.getDataPrefix());
+
+        // decrement the replication value
+		storageInfo.decrReplication();
+
+        NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Creating a Data Consumer " << storageInfo.getDataPrefix() );
+		DataConsumer* dataConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), storageInfo.getDataPrefix());
+		dataConsumer->processData(storageInfo);
+		NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Data consumption event fired " << interest->getName().toUri() );
+
+		NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") advertise heartbeat name:  " << heartbeatName );
+		FibHelper::AddRoute(GetNode(), heartbeatName, m_face , 0);
+		ndn::GlobalRoutingHelper ndnGlobalRoutingHelper;
+		NodeContainer nodes;
+		nodes.Add(GetNode());
+		ndnGlobalRoutingHelper.AddOrigins(heartbeatName, nodes);
+		ndn::GlobalRoutingHelper::CalculateRoutes();
+
+        //save the advertised heartbeat name in the list
+        heartbeatList.push_front(heartbeatName);
+
+
+		if (storageInfo.getReplicationAsInt() != 0) {
+
+
+            std::string heartbeatPrefix(storageInfo.getDataPrefix()+"/heartbeat/"+storageInfo.getReplication());
+
+            NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") check for the next replication using heatbeat interest " << heartbeatPrefix );
+
+            DataConsumer* heatConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), heartbeatPrefix);
+            heatConsumer->processCommand();
+
+
+
+		}
+
+
+
+
+
+
+    }
+
+/*	std::string prefix = m_prefix_command.toUri();
 	std::size_t place = interest->getName().toUri().find(prefix);
 	if (place == 0) {
 
 
 
-		NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Interest is a storage command " << interest->getName().toUri() );
+		NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Interest is a storage command " << interest->getName().toUri() );
 		StorageInfo storageInfo(interest->getName().toUri(), m_prefix_command.toUri());
 
 		// decrement the replication value
 		storageInfo.decrReplication();
 
 		NS_LOG_DEBUG(
-				"node(" << GetNode()->GetId()<< ") replication: "
+				"STORAGE node(" << GetNode()->GetId()<< ") replication: "
 				<< storageInfo.getReplication() << " lastSegment: "
 				<< storageInfo.getLastSegment() << " dataprefix: "
 				<< storageInfo.getDataPrefix());
+
 		//TODO
-		NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Creating a Data Consumer " << storageInfo.getDataPrefix() );
+		NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Creating a Data Consumer " << storageInfo.getDataPrefix() );
 		DataConsumer* dataConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), storageInfo.getDataPrefix());
 		dataConsumer->processData(storageInfo);
-		NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Data consumption event fired " << interest->getName().toUri() );
+		NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Data consumption event fired " << interest->getName().toUri() );
 
 		m_prefix_data = Name(storageInfo.getDataPrefix());
 		if (storageInfo.getReplicationAsInt() != 0) {
@@ -245,21 +402,21 @@ void Storage::OnInterest(shared_ptr<const Interest> interest) {
 
 			std::string replicationPrefix(m_prefix_command.toUri()
 					+"/"+storageInfo.getReplication()+storageInfo.getDataPrefix()+"0/"+storageInfo.getLastSegment());
-			NS_LOG_INFO("node(" << GetNode()->GetId() << ") Forwarding the replication command " << replicationPrefix );
+			NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") Forwarding the replication command " << replicationPrefix );
 
 			DataConsumer* repConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), replicationPrefix);
 			repConsumer->processCommand();
-			NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Replication event fired " << replicationPrefix );
+			NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Replication event fired " << replicationPrefix );
 		}
 
 		// cnp ce qui il y a en dessous
 	} else {
 
 
-		NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Interest is a Data retrieval " << interest->getName().toUri() );
+		NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Interest is a Data retrieval " << interest->getName().toUri() );
 	}
 	//verifier si entre 0 et lastSegment
-
+*/
 
 
 
@@ -278,7 +435,7 @@ void Storage::OnInterestResponse(shared_ptr<const Interest> interest) {
 			::ndn::time::milliseconds(m_freshness.GetMilliSeconds()));
 
 	data->setContent(make_shared < ::ndn::Buffer > (m_virtualPayloadSize));
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Preparing the data packet to serve "<< data->getName().toUri());
+	NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Preparing the data packet to serve "<< data->getName().toUri());
 
 	Signature signature;
 	SignatureInfo signatureInfo(
@@ -304,7 +461,7 @@ void Storage::OnInterestResponse(shared_ptr<const Interest> interest) {
 //	m_face->onReceiveData(*data);
 	m_appLink->onReceiveData(*data);
 	//state = &(state->OnInterest(interest));
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") responding with Data: " << data->getName());
+	NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") responding with Data: " << data->getName());
 }
 
 

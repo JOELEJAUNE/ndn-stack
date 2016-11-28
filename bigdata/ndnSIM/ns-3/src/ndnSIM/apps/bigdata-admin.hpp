@@ -37,10 +37,13 @@ public:
 	// inherited from NdnApp
 	virtual void
 	OnInterest(shared_ptr<const Interest> interest);
+    void OnInterestResponse(shared_ptr<const Interest> interest);
+
 	// From App
 	virtual void
 	OnData(shared_ptr<const Data> contentObject);
 	virtual void OnDataRetrieved(DataConsumer* consumer);
+	virtual void OnTimeout(DataConsumer* consumer);
 	int getLastSegment() const {
 		return m_last_segment;
 	}

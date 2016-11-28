@@ -33,6 +33,7 @@ public:
 	virtual App& getApp() const =0;
 	virtual Ptr<Node> getNode() const = 0;
 	virtual void OnDataRetrieved(DataConsumer* consumer) =0;
+	virtual void OnTimeout(DataConsumer* consumer) =0;
 	virtual void SendInterest(std::string prefix) =0;
 	virtual Name getPrefixCommand() const = 0;
 	virtual void pushConsumer(DataConsumer* dc) = 0;
@@ -82,6 +83,11 @@ public:
 	void OnDataRetrieved(DataConsumer* consumer) {
 		return item->OnDataRetrieved(consumer);
 	}
+
+	void OnTimeout(DataConsumer* consumer) {
+		return item->OnTimeout(consumer);
+	}
+
 	void SendInterest(std::string prefix) {
 		item->SendInterest(prefix) ;
 	}

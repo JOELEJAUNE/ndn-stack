@@ -27,6 +27,7 @@ protected:
 	string replication;
 	string lastSegment;
 	string dataPrefix;
+	string replicationFactor;
 public:
 	StorageInfo(string, string);
 	virtual ~StorageInfo();
@@ -64,6 +65,9 @@ public:
 	string getReplication() const {
 		return replication;
 	}
+	string getReplicationFactor() const {
+		return replicationFactor;
+	}
 
 	int getReplicationAsInt() const {
 		istringstream repReader(replication);
@@ -79,6 +83,12 @@ public:
 		this->replication = replication;
 	}
 
+	void setReplicationFactor(int replicationFactor) {
+		this->replicationFactor = to_string(replicationFactor);
+	}
+	void setReplicationFactor(string replicationFactor) {
+		this->replicationFactor = replicationFactor;
+	}
 };
 
 } /* namespace ndn */
