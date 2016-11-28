@@ -10,7 +10,8 @@
 #include "ns3/integer.h"
 #include "ns3/double.h"
 
-#include "model/ndn-app-face.hpp"
+//#include "model/ndn-app-face.hpp"
+#include "model/ndn-app-link-service.hpp"
 #include "helper/ndn-fib-helper.hpp"
 
 //#include "helper/ndn-global-routing-helper.hpp"
@@ -64,8 +65,11 @@ Admin::StartApplication()
 {
 	NS_LOG_FUNCTION_NOARGS();
 	App::StartApplication();
-	std::string prefix(m_prefix_command.toUri()+"/"+std::to_string(m_rep_factor)+m_prefix_data.toUri()+"/0/"+std::to_string(m_last_segment));
-	NS_LOG_INFO("node(" << GetNode()->GetId() << ") Advertizing prefix " << m_prefix_data );
+	//std::string prefix(m_prefix_command.toUri()+"/"+std::to_string(m_rep_factor)+m_prefix_data.toUri()+"/0/"+std::to_string(m_last_segment));
+
+	std::string heartbeatName(m_prefix_data.toUri()+"/heartbeat/"+std::to_string(m_rep_factor)); //heartbeat
+
+	NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Advertizing prefix " << m_prefix_data );
 	Name stop(m_prefix_data.toUri()+"/stop/0/"+std::to_string(m_last_segment));
 	//this->state = new AdminFirstState(*this, GetNode(), cmd, m_prefix_data);
 	FibHelper::AddRoute(GetNode(), m_prefix_data, m_face , 0);
@@ -78,8 +82,8 @@ Admin::StartApplication()
 		ndn::GlobalRoutingHelper::CalculateRoutes();
 	m_freshness = Seconds (10.0);
 
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Creating a Data Consumer " << prefix );
-	DataConsumer* dataConsumer = new DataConsumer(new  AppWrapperTemplate<Admin*> (this), prefix);
+	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Creating a Data Consumer " << heartbeatName );
+	DataConsumer* dataConsumer = new DataConsumer(new  AppWrapperTemplate<Admin*> (this), heartbeatName);
 	dataConsumer->setSeqMax(1);
 	consumers.push_front (dataConsumer);
 	Simulator::Schedule(Seconds(0.0), &DataConsumer::SendPacket, dataConsumer);
@@ -107,20 +111,48 @@ Admin::StopApplication()
 }
 
 void Admin::OnDataRetrieved(DataConsumer* consumer){
-	NS_LOG_INFO("node(" << GetNode()->GetId() << ") Data packet received " << consumer->getInterestName().toUri() );
+	NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Data packet received " << consumer->getInterestName().toUri() );
 	if (!m_active){
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") Storage NOT active ignoring the packet " << consumer->getInterestName().toUri() );
+		NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Admin NOT active ignoring the packet " << consumer->getInterestName().toUri() );
 		return;
 	}
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Command executed succesfully " << consumer->getInterestName().toUri() );
+	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Command executed succesfully " << consumer->getInterestName().toUri() );
 	consumers.remove(consumer);
 	delete consumer;
 }
 
+
+void Admin::OnTimeout(DataConsumer* consumer){
+
+	NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") heartbeat timeout for " << consumer->getInterestName().toUri() );
+
+     string heartbeatFactor(consumer->getInterestName().toUri().substr(consumer->getInterestName().toUri().find_last_of("/") +1, consumer->getInterestName().toUri().size() )); //get the replication factor from the InterestName
+	// /lacl/data/heartbeat/5
+//  /lacl/storage/3/3/lacl/data/0/9
+
+// now /lacl/storage/5/lacl/data/0/1
+//NS_LOG_INFO(m_prefix_command.toUri());
+//NS_LOG_INFO(m_rep_factor);
+//NS_LOG_INFO(m_prefix_data.toUri());
+    consumers.remove(consumer);
+    delete consumer;
+	std::string prefix(m_prefix_command.toUri()+"/"+std::to_string(m_rep_factor)+"/"+heartbeatFactor+m_prefix_data.toUri()+"/0/"+std::to_string(m_last_segment));
+
+	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Creating a Data Consumer " << prefix );
+	DataConsumer* dataConsumer = new DataConsumer(new  AppWrapperTemplate<Admin*> (this), prefix);
+	dataConsumer->setSeqMax(1);
+	consumers.push_front (dataConsumer);
+	Simulator::Schedule(Seconds(0.0), &DataConsumer::SendPacket, dataConsumer);
+
+
+
+}
+
+
 void Admin::SendInterest(std::string prefix) {
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Request for sending Interest " << prefix );
+	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Request for sending Interest " << prefix );
 	if (!m_active){
-		NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Admin NOT active ignoring the request " << prefix );
+		NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Admin NOT active ignoring the request " << prefix );
 		return;
 	}
 	/////////////////////////////////////
@@ -133,20 +165,21 @@ void Admin::SendInterest(std::string prefix) {
 	interest->setNonce(rand->GetValue(0, std::numeric_limits<uint32_t>::max()));
 	interest->setInterestLifetime(ndn::time::seconds(1));
 
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Sending Interest packet for " << *interest);
+	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Sending Interest packet for " << *interest);
 
 	// Call trace (for logging purposes)
 	m_transmittedInterests(interest, this, m_face);
 
-	m_face->onReceiveInterest(*interest);
+	//m_face->onReceiveInterest(*interest);
+	m_appLink->onReceiveInterest(*interest);
 }
 
 void
 Admin::OnData(shared_ptr<const Data> data)
 {
-	NS_LOG_INFO("node(" << GetNode()->GetId() << ") Data packet received " << data->getName().toUri() );
+	NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Data packet received " << data->getName().toUri() );
 	if (!m_active){
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") Admin NOT active ignoring the packet " << data->getName().toUri() );
+		NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Admin NOT active ignoring the packet " << data->getName().toUri() );
 		return;
 	}
 
@@ -180,17 +213,25 @@ Admin::OnData(shared_ptr<const Data> data)
 }
 
 void Admin::OnInterest(shared_ptr<const Interest> interest) {
-	NS_LOG_INFO("node(" << GetNode()->GetId() << ") Interest packet received  " << interest->getName().toUri() );
+	NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Interest packet received  " << interest->getName().toUri() );
 	if (!m_active){
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") Admin NOT active ignoring the packet " << interest->getName().toUri() );
+		NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Admin NOT active ignoring the packet " << interest->getName().toUri() );
 		return;
+	}
+
+	//Admin doesn't have to respond to heartbeat Interest
+	if(interest->getName().toUri().find("heartbeat") != std::string::npos){
+
+        NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Admin ignoring heartbeat packet " << interest->getName().toUri() );
+        return;
+
 	}
 	App::OnInterest(interest); // tracing inside
 	//NS_LOG_FUNCTION(this << interest);
 
 	//NS_LOG_FUNCTION(this << interest);
 
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Checking interest type " << interest->getName().toUri() << " against " << m_prefix_data.toUri());
+	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Checking interest type " << interest->getName().toUri() << " against " << m_prefix_data.toUri());
 
 	std::string prefix = interest->getName().toUri();
 	std::size_t place	= prefix.find(m_prefix_data.toUri());
@@ -200,23 +241,33 @@ void Admin::OnInterest(shared_ptr<const Interest> interest) {
 		// cnp ce qui il y a en dessous
 		// case2: /lacl/data/stop/0/9
 		std::string suffix = std::string("/stop/0/")+std::to_string(m_last_segment);
-		if (prefix.compare(m_prefix_data.toUri()+suffix) == 0) {
-			NS_LOG_INFO("node(" << GetNode()->GetId() << ") Interest is a stop command request " << interest->getName().toUri() );
+		if (prefix.find(m_prefix_data.toUri()+suffix) == 0) {
+			NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Interest is a stop command request " << interest->getName().toUri() );
+
+
+			OnInterestResponse(interest);   //respond to the stop interest before the stop of the process
+
 			FibHelper::RemoveRoute(GetNode(), m_prefix_data, m_face );
 			m_active = false;
-			NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") removed prefix " << m_prefix_data << " from the FIB and Admin disabled" );
+			NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") removed prefix " << m_prefix_data << " from the FIB and Admin disabled" );
 			return ;
 		}else{
-			NS_LOG_INFO("node(" << GetNode()->GetId() << ") Interest is a data request " << interest->getName().toUri() );
+			NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Interest is a data request " << interest->getName().toUri() );
 		}
 	} else {
 		// case3: /autre/chose
-		NS_LOG_INFO("node(" << GetNode()->GetId() << ") Ignoring unrecognized interest " << interest->getName().toUri() );
+		NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Ignoring unrecognized interest " << interest->getName().toUri() );
 		return ;
 	}
 	//verifier si entre 0 et lastSegment
 
 	//si /stop/0/lastSegment remove advertise and return null
+	OnInterestResponse(interest);
+
+
+}
+
+void Admin::OnInterestResponse(shared_ptr<const Interest> interest) {
 
 
 	Name dataName(interest->getName());
@@ -228,7 +279,7 @@ void Admin::OnInterest(shared_ptr<const Interest> interest) {
 	data->setFreshnessPeriod(::ndn::time::milliseconds(m_freshness.GetMilliSeconds()));
 
 	data->setContent(make_shared< ::ndn::Buffer>(m_virtualPayloadSize));
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Preparing the data packet to serve "<< data->getName().toUri());
+	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Preparing the data packet to serve "<< data->getName().toUri());
 
 	Signature signature;
 	SignatureInfo signatureInfo(static_cast< ::ndn::tlv::SignatureTypeValue>(255));
@@ -242,16 +293,19 @@ void Admin::OnInterest(shared_ptr<const Interest> interest) {
 
 	data->setSignature(signature);
 
-	NS_LOG_DEBUG("node(" << m_node << ") responding with Data: " << data->getName());
+	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") responding with Data: " << data->getName());
 
 	// to create real wire encoding
 	data->wireEncode();
 
 	setTransmittedDatas(data);
-	m_face->onReceiveData(*data);
-	NS_LOG_DEBUG("node(" << GetNode()->GetId() << ") Data packet transmitted to th NFD "<< data->getName().toUri());
-}
+	//m_face->onReceiveData(*data);
+	m_appLink->onReceiveData(*data);
+	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Data packet transmitted to the NFD "<< data->getName().toUri());
 
+
+
+}
 
 } // namespace ndn
 } // namespace ns3

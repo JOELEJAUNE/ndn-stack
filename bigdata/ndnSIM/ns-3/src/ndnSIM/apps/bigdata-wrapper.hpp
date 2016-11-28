@@ -29,10 +29,11 @@ public:
 	virtual void setTransmittedDatas(shared_ptr<const Data> data) =0;
 	virtual TracedCallback<shared_ptr<const Data>, Ptr<App>, shared_ptr<Face>> getTransmittedDatas() const =0;
 	//virtual void setFace(shared_ptr<AppFace> face) =0;
-	virtual shared_ptr<AppFace> getFace() const =0;
+	virtual shared_ptr<Face> getFace() const =0;
 	virtual App& getApp() const =0;
 	virtual Ptr<Node> getNode() const = 0;
 	virtual void OnDataRetrieved(DataConsumer* consumer) =0;
+	virtual void OnTimeout(DataConsumer* consumer) =0;
 	virtual void SendInterest(std::string prefix) =0;
 	virtual Name getPrefixCommand() const = 0;
 	virtual void pushConsumer(DataConsumer* dc) = 0;
@@ -67,10 +68,10 @@ public:
 	TracedCallback<shared_ptr<const Data>, Ptr<App>, shared_ptr<Face>> getTransmittedDatas() const {
 		return item->getTransmittedDatas();
 	}
-	void setFace(shared_ptr<AppFace> face) {
+	void setFace(shared_ptr<Face> face) {
 		item->setFace(face);;
 	}
-	shared_ptr<AppFace> getFace() const {
+	shared_ptr<Face> getFace() const {
 		return item->getFace();
 	}
 	Ptr<Node> getNode() const {
@@ -82,6 +83,11 @@ public:
 	void OnDataRetrieved(DataConsumer* consumer) {
 		return item->OnDataRetrieved(consumer);
 	}
+
+	void OnTimeout(DataConsumer* consumer) {
+		return item->OnTimeout(consumer);
+	}
+
 	void SendInterest(std::string prefix) {
 		item->SendInterest(prefix) ;
 	}

@@ -43,7 +43,8 @@ predicate_NextHop_eligible(bool rep,const shared_ptr<pit::Entry>& pitEntry,
 
 
 	NFD_LOG_DEBUG("Testing Face" + upstream->getRemoteUri().toString());
-	if(rep && upstream->isLocal()){
+	//if(rep && upstream->isLocal()){
+	if(rep && (upstream->getScope() == ndn::nfd::FACE_SCOPE_LOCAL)){
 		NFD_LOG_DEBUG("Face rejected " + upstream->getRemoteUri().toString());
 		return false;
 	}

@@ -21,7 +21,9 @@
 #include "ns3/object.h"
 
 #include "utils/ndn-ns3-packet-tag.hpp"
-#include "model/ndn-app-face.hpp"
+//#include "model/ndn-app-face.hpp"
+#include "model/ndn-app-link-service.hpp"
+#include "model/null-transport.hpp"
 #include "utils/ndn-rtt-mean-deviation.hpp"
 
 #include <boost/lexical_cast.hpp>
@@ -168,12 +170,25 @@ DataConsumer::OnTimeout(uint32_t sequenceNumber)
 	// m_rtt->RetransmitTimeout ().ToDouble (Time::S) << "s\n";
 	NS_LOG_DEBUG("node(" << wrapper->getNode()->GetId() << ")TimeOut fired " << m_interestName.toUri() );
 
+	//check if the timeout is related to a heartbeat; or a storage
+
+    if((m_interestName.toUri().find("heartbeat") != std::string::npos)||(m_interestName.toUri().find("storage") != std::string::npos)){
+
+ //  NS_LOG_DEBUG("node(" << wrapper->getNode()->GetId() << ") heartbeat Interest timeout  ");
+
+    Simulator::Schedule(Seconds(0.0), &AppWrapper::OnTimeout, wrapper, this);
+
+    }else{
+
+
 	m_rtt->IncreaseMultiplier(); // Double the next RTO
 	m_rtt->SentSeq(SequenceNumber32(sequenceNumber),
 			1); // make sure to disable RTT calculation for this sample
 	m_retxSeqs.insert(sequenceNumber);
 	//ScheduleNextPacket();Todo: add first packet call
-	 m_sendEvent = Simulator::Schedule(Seconds(0.0), &DataConsumer::SendPacket, this);
+    m_sendEvent = Simulator::Schedule(Seconds(0.0), &DataConsumer::SendPacket, this);
+
+    }
 }
 
 void

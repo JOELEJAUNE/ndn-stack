@@ -86,6 +86,15 @@ public:
 		return status;
 	}
 
+	void setStopInterestDone(bool value)
+	{
+		this->stopInterestDone = value;
+	}
+
+	bool isStopInterestDone() const
+	{
+		return stopInterestDone;
+	}
 
 
 
@@ -115,6 +124,9 @@ public:
 	  void processData(StorageInfo& storageInfo) {
 	  			setSeqMax(storageInfo.getLastSegmentAsInt() + 1);
 	  			setNeedsAction(storageInfo.getReplicationAsInt() == 0);
+	  			if(isStopInterestDone()){
+                    setNeedsAction(false);
+	  			}
 	  			wrapper->pushConsumer(this);
 	  			Simulator::Schedule(Seconds(0.0), &DataConsumer::SendPacket, this);
 	  }
@@ -140,6 +152,7 @@ protected:
 	Time m_interestLifeTime = Time(1);///< \brief LifeTime for interest packet , m_interestLifeTime(Time(1))
 	bool status = false;
 	bool m_command = false;
+	bool stopInterestDone = false; // Use to know when the last replication factor storage node send the stop Interest
 	/// @cond include_hidden
 	/**
 	 * \struct This struct contains sequence numbers of packets to be retransmitted

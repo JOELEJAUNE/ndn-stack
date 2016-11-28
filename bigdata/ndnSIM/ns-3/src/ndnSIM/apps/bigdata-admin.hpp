@@ -37,10 +37,13 @@ public:
 	// inherited from NdnApp
 	virtual void
 	OnInterest(shared_ptr<const Interest> interest);
+    void OnInterestResponse(shared_ptr<const Interest> interest);
+
 	// From App
 	virtual void
 	OnData(shared_ptr<const Data> contentObject);
 	virtual void OnDataRetrieved(DataConsumer* consumer);
+	virtual void OnTimeout(DataConsumer* consumer);
 	int getLastSegment() const {
 		return m_last_segment;
 	}
@@ -60,10 +63,12 @@ public:
 	TracedCallback<shared_ptr<const Data>, Ptr<App>, shared_ptr<Face>> getTransmittedDatas() const {
 		return m_transmittedDatas;
 	}
-	void setFace(shared_ptr<AppFace> face) {
+//	void setFace(shared_ptr<AppFace> face) {
+	void setFace(shared_ptr<Face> face) {
 		m_face = face;
 	}
-	shared_ptr<AppFace> getFace() const {
+	//shared_ptr<AppFace> getFace() const {
+	shared_ptr<Face> getFace() const {
 		return m_face;
 	}
 	void SendInterest(std::string prefix) ;
