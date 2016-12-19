@@ -29,6 +29,8 @@ public:
 	Storage();
 	virtual ~Storage();
 	void SendInterest(std::string prefix) ;
+	void ScheduleNextHeartBeat(std::string name);
+	void sendHeartBeat(std::string name) ;
 	// (overridden from ndn::App) Callback that will be called when Interest arrives
 	  virtual void
 	  OnInterest(std::shared_ptr<const ndn::Interest> interest);
@@ -39,6 +41,7 @@ public:
 	  OnData(std::shared_ptr<const ndn::Data> contentObject);
 	virtual void OnDataRetrieved(DataConsumer* consumer);
 	virtual void OnTimeout(DataConsumer* consumer);
+	EventId m_sendEvent; ///< @brief EventId of pending "send packet" event
 
 	int getLastSegment() const {
 		return m_last_segment;
@@ -96,6 +99,7 @@ protected:
 	std::list<DataConsumer*> consumers;
 
 	std::list<string> heartbeatList;
+	bool m_firstTime;
 };
 
 

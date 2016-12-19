@@ -117,6 +117,7 @@ void Storage::OnDataRetrieved(DataConsumer* consumer){
 		nodes.Add(GetNode());
 		ndnGlobalRoutingHelper.AddOrigins(consumer->getInterestName().toUri(), nodes);
 		ndn::GlobalRoutingHelper::CalculateRoutes();
+
 	}else {
 
 	}
@@ -262,6 +263,15 @@ void Storage::SendInterest(std::string prefix) {
 	interest->setNonce(rand->GetValue(0, std::numeric_limits<uint32_t>::max()));
 	interest->setInterestLifetime(ndn::time::seconds(10));
 
+
+	//set the mustbeFresh to true if the Interest is a storage, heartbeat or stop
+
+	if((prefix.find("heartbeat") != std::string::npos)||(prefix.find("storage") != std::string::npos)||(prefix.find("stop") != std::string::npos)){
+
+        interest->setMustBeFresh(true);
+
+	}
+
 	NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Sending Interest packet for " << *interest);
 
 	// Call trace (for logging purposes)
@@ -349,17 +359,32 @@ void Storage::OnInterest(shared_ptr<const Interest> interest) {
 
 		if (storageInfo.getReplicationAsInt() != 0) {
 
+            //TODO start the heartbeat process;
 
             std::string heartbeatPrefix(storageInfo.getDataPrefix()+"/heartbeat/"+storageInfo.getReplication());
 
-            NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") check for the next replication using heatbeat interest " << heartbeatPrefix );
+            ScheduleNextHeartBeat(heartbeatPrefix);
 
-            DataConsumer* heatConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), heartbeatPrefix);
-            heatConsumer->processCommand();
+            //NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") check for the next replication using heatbeat interest " << heartbeatPrefix );
+
+            //DataConsumer* heatConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), heartbeatPrefix);
+            //heatConsumer->processCommand();
 
 
 
 		}
+
+		// when it's the last replicated storage, heartbeat for the first one
+		if (storageInfo.getReplicationAsInt() == 0) {
+
+            //TODO start the heartbeat process;
+
+            std::string heartbeatPrefix(storageInfo.getDataPrefix()+"/heartbeat/"+storageInfo.getReplicationFactor());
+
+            ScheduleNextHeartBeat(heartbeatPrefix);
+
+		}
+
 
 
 
@@ -434,6 +459,16 @@ void Storage::OnInterestResponse(shared_ptr<const Interest> interest) {
 	data->setFreshnessPeriod(
 			::ndn::time::milliseconds(m_freshness.GetMilliSeconds()));
 
+    //set the freshnessPeriod to 1ms if the data is a storage, heartbeat or stop
+
+	if((interest->getName().toUri().find("heartbeat") != std::string::npos)||(interest->getName().toUri().find("storage") != std::string::npos)||(interest->getName().toUri().find("stop") != std::string::npos)){
+
+	data->setFreshnessPeriod(::ndn::time::milliseconds(1));
+
+	}
+
+
+
 	data->setContent(make_shared < ::ndn::Buffer > (m_virtualPayloadSize));
 	NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") Preparing the data packet to serve "<< data->getName().toUri());
 
@@ -462,6 +497,31 @@ void Storage::OnInterestResponse(shared_ptr<const Interest> interest) {
 	m_appLink->onReceiveData(*data);
 	//state = &(state->OnInterest(interest));
 	NS_LOG_DEBUG("STORAGE node(" << GetNode()->GetId() << ") responding with Data: " << data->getName());
+}
+
+void
+Storage::ScheduleNextHeartBeat(string name)
+{
+
+  if (m_firstTime) {
+    m_sendEvent = Simulator::Schedule(Seconds(0.0), &Storage::sendHeartBeat, this, name);
+    m_firstTime = false;
+  }
+  else if (!m_sendEvent.IsRunning())
+    m_sendEvent = Simulator::Schedule(Seconds(10),  &Storage::sendHeartBeat, this, name);
+}
+
+void
+Storage::sendHeartBeat(string name)
+{
+
+    NS_LOG_INFO("STORAGE node(" << GetNode()->GetId() << ") check for the next replication using heatbeat interest " << name );
+
+    DataConsumer* heatConsumer = new DataConsumer(new  AppWrapperTemplate<Storage*> (this), name);
+    heatConsumer->processCommand();
+
+    ScheduleNextHeartBeat(name);
+
 }
 
 
