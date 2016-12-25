@@ -221,7 +221,8 @@ Admin::OnData(shared_ptr<const Data> data)
 }
 
 void Admin::OnInterest(shared_ptr<const Interest> interest) {
-	NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Interest packet received  " << interest->getName().toUri() );
+
+    NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Interest packet received  " << interest->getName().toUri() );
 	if (!m_active){
 		NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Admin NOT active ignoring the packet " << interest->getName().toUri() );
 		return;

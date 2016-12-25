@@ -27,6 +27,8 @@
 #include "ns3/ndnSIM-module.h"
 #include "ns3/node-container.h"
 #include "ns3/ndnSIM/apps/bigdata-strategy.hpp"
+#include "ns3/ndnSIM/apps/bigdata-default-strategy.hpp"
+#include "ns3/ndnSIM/helper/ndn-link-control-helper.hpp"
 
 
 
@@ -105,6 +107,17 @@ main(int argc, char* argv[])
 	cmd.AddValue ("segments", "Number of segments per data file", nbSegments);
 	cmd.Parse(argc, argv);
 
+   //set the dumpfile location;
+    //GlobalValue location("fileName","toto",replication);
+    	static GlobalValue g_myGlobal =
+  GlobalValue ("myGlobal", "Value for the dump file",
+               StringValue (std::string("../../bigdata/dump-trace-")
+		+std::to_string(replication)+std::string("_")
+		+std::to_string(nbStorages)+std::string("_")
+		+std::to_string(dimension)+std::string("_")
+		+std::to_string(nbSegments)+std::string(".txt")),
+               MakeStringChecker ());
+
 
 	//AnnotatedTopologyReader topologyReader("", 25);
 	// topologyReader.SetFileName("src/ndnSIM/apps/bigdata-topo-grid-3x3.txt");
@@ -140,6 +153,7 @@ main(int argc, char* argv[])
 	ndn::StackHelper ndnHelper;
 	ndnHelper.SetOldContentStore("ns3::ndn::cs::Lru", "MaxSize",
 			"100"); // default ContentStore parameters
+	//	ndnHelper.SetOldContentStore("ns3::ndn::cs::Nocache");
 
 	ndnHelper.InstallAll();
 
@@ -151,13 +165,14 @@ main(int argc, char* argv[])
 	ndnGlobalRoutingHelper.InstallAll();
 
 	ndn::StrategyChoiceHelper::InstallAll("/lacl/storage", "/localhost/nfd/strategy/bigdata");
-
+	//ndn::StrategyChoiceHelper::InstallAll("/lacl/data", "/localhost/nfd/strategy/bigdata");
+	//ndn::StrategyChoiceHelper::InstallAll("/lacl/data/heartbeat", "/localhost/nfd/strategy/multicast");
+    ndn::StrategyChoiceHelper::InstallAll("/lacl/data", "/localhost/nfd/strategy/bigdatadefault");
 
 	// Getting containers for the consumer/producer
 	//Ptr<Node> producer = Names::Find<Node>("Node8");
 	//NodeContainer nodes;
 	//consumerNodes.Add(Names::Find<Node>("Node0"));
-
 
 	ndn::AppHelper adminHelper("ns3::ndn::Admin");
 	// Consumer will request /prefix/0, /prefix/1, ...
@@ -169,9 +184,9 @@ main(int argc, char* argv[])
 
 
 	int lastPrime = 2;
-	int countStorage = 0; //get the number of storage initialized
+	uint32_t countStorage = 0; //get the number of storage initialized
 	// Storage A
-	for (int i = 1; i < (int)dimension*dimension; ++i) {
+	for (int i = 1; i < (int)dimension * (int)dimension; ++i) {
 		if(i == lastPrime){
 			lastPrime = nextPrime(lastPrime);
 			continue;
@@ -187,6 +202,7 @@ main(int argc, char* argv[])
 		}
 
 	}
+
 	//	storageHelperA.Install(grid.GetNode(0, 0));//Names::Find<Node>("Node0")); // last node
 	//	storageHelperA.Install(grid.GetNode(0, 2));//Names::Find<Node>("Node0")); // last node
 	//	storageHelperA.Install(grid.GetNode(2, 1));//Names::Find<Node>("Node0")); // last node
@@ -201,7 +217,15 @@ main(int argc, char* argv[])
 	//	storageHelperC.SetAttribute("PrefixCommand", StringValue("/lacl/storage"));
 	//	storageHelperC.Install(Names::Find<Node>("Node7")); // last node
 
+ /*  Simulator::Schedule (Seconds (15), ndn::LinkControlHelper::FailLink, nodes.Get (6), nodes.Get (1));
+    Simulator::Schedule (Seconds (15), ndn::LinkControlHelper::FailLink, nodes.Get (6), nodes.Get (5));
+    Simulator::Schedule (Seconds (15), ndn::LinkControlHelper::FailLink, nodes.Get (6), nodes.Get (7));
+    Simulator::Schedule (Seconds (15), ndn::LinkControlHelper::FailLink, nodes.Get (6), nodes.Get (11));
+*/
 	Simulator::Stop(Seconds(1000.0));
+	//ns3::Config::SetGlobal 	("toto", "../../bigdata/rate-trace-");
+
+
 
 	ndn::L3RateTracer::InstallAll(std::string("../../bigdata/rate-trace-")
 		+std::to_string(replication)+std::string("_")
@@ -213,7 +237,15 @@ main(int argc, char* argv[])
 		+std::to_string(nbStorages)+std::string("_")
 		+std::to_string(dimension)+std::string("_")
 		+std::to_string(nbSegments)+std::string(".txt"), Seconds(0.5));
+
+		ndn::AppDelayTracer::InstallAll(std::string("../../bigdata/delay-trace-")
+		+std::to_string(replication)+std::string("_")
+		+std::to_string(nbStorages)+std::string("_")
+		+std::to_string(dimension)+std::string("_")
+		+std::to_string(nbSegments)+std::string(".txt"));
 	//  L2RateTracer::InstallAll("drop-trace.txt", Seconds(0.5));
+
+
 	Simulator::Run();
 	Simulator::Destroy();
 
