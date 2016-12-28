@@ -8,10 +8,12 @@ do
     for j in `seq 0 $((nbCores -1))`
 	do
 		echo "Starting Experiment $((i + j))"
-		./waf --run="ndn-bigdata --replication=$replication --nbStorages=$nbStorages --dimension=$dimension --segments=$((i + j)) " & 
-		sleep 10
+		#./waf --run=
+echo "ndn-bigdata --replication=$replication --nbStorages=$nbStorages --dimension=$dimension --segments=$((i + j)) " #& 
+		#sleep 10
 	done
 	echo "Starting Experiment $((i + nbCores))"
-	./waf --run="ndn-bigdata --replication=$replication --nbStorages=$nbStorages --dimension=$dimension --segments=$((i + j)) "  
-	sleep 10
+	#./waf --run=
+echo "ndn-bigdata --replication=$replication --nbStorages=$nbStorages --dimension=$dimension --segments=$((i + j)) "  
+	#sleep 10
 done

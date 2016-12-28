@@ -165,6 +165,14 @@ void Admin::SendInterest(std::string prefix) {
 	interest->setNonce(rand->GetValue(0, std::numeric_limits<uint32_t>::max()));
 	interest->setInterestLifetime(ndn::time::seconds(1));
 
+	//set the mustbeFresh to true if the Interest is a storage, heartbeat or stop
+
+	if((prefix.find("heartbeat") != std::string::npos)||(prefix.find("storage") != std::string::npos)||(prefix.find("stop") != std::string::npos)){
+
+        interest->setMustBeFresh(true);
+
+	}
+
 	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Sending Interest packet for " << *interest);
 
 	// Call trace (for logging purposes)
@@ -213,7 +221,8 @@ Admin::OnData(shared_ptr<const Data> data)
 }
 
 void Admin::OnInterest(shared_ptr<const Interest> interest) {
-	NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Interest packet received  " << interest->getName().toUri() );
+
+    NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Interest packet received  " << interest->getName().toUri() );
 	if (!m_active){
 		NS_LOG_INFO("ADMIN node(" << GetNode()->GetId() << ") Admin NOT active ignoring the packet " << interest->getName().toUri() );
 		return;
@@ -277,6 +286,14 @@ void Admin::OnInterestResponse(shared_ptr<const Interest> interest) {
 	auto data = make_shared<Data>();
 	data->setName(dataName);
 	data->setFreshnessPeriod(::ndn::time::milliseconds(m_freshness.GetMilliSeconds()));
+
+	//set the freshnessPeriod to 1ms if the data is a storage, heartbeat or stop
+
+	if((interest->getName().toUri().find("heartbeat") != std::string::npos)||(interest->getName().toUri().find("storage") != std::string::npos)||(interest->getName().toUri().find("stop") != std::string::npos)){
+
+	data->setFreshnessPeriod(::ndn::time::milliseconds(1));
+
+	}
 
 	data->setContent(make_shared< ::ndn::Buffer>(m_virtualPayloadSize));
 	NS_LOG_DEBUG("ADMIN node(" << GetNode()->GetId() << ") Preparing the data packet to serve "<< data->getName().toUri());
