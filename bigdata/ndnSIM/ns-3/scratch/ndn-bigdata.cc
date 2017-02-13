@@ -109,7 +109,7 @@ main(int argc, char* argv[])
 
    //set the dumpfile location;
     //GlobalValue location("fileName","toto",replication);
-    	static GlobalValue g_myGlobal =
+   	static GlobalValue g_myGlobal =
   GlobalValue ("myGlobal", "Value for the dump file",
                StringValue (std::string("../../bigdata/dump-trace-")
 		+std::to_string(replication)+std::string("_")
@@ -117,7 +117,6 @@ main(int argc, char* argv[])
 		+std::to_string(dimension)+std::string("_")
 		+std::to_string(nbSegments)+std::string(".txt")),
                MakeStringChecker ());
-
 
 	//AnnotatedTopologyReader topologyReader("", 25);
 	// topologyReader.SetFileName("src/ndnSIM/apps/bigdata-topo-grid-3x3.txt");
@@ -167,7 +166,8 @@ main(int argc, char* argv[])
 	ndn::StrategyChoiceHelper::InstallAll("/lacl/storage", "/localhost/nfd/strategy/bigdata");
 	//ndn::StrategyChoiceHelper::InstallAll("/lacl/data", "/localhost/nfd/strategy/bigdata");
 	//ndn::StrategyChoiceHelper::InstallAll("/lacl/data/heartbeat", "/localhost/nfd/strategy/multicast");
-    ndn::StrategyChoiceHelper::InstallAll("/lacl/data", "/localhost/nfd/strategy/bigdatadefault");
+//    ndn::StrategyChoiceHelper::InstallAll("/lacl/data", "/localhost/nfd/strategy/bigdatadefault");
+//ndn::StrategyChoiceHelper::InstallAll("/lacl/data", "/localhost/nfd/strategy/multicast");
 
 	// Getting containers for the consumer/producer
 	//Ptr<Node> producer = Names::Find<Node>("Node8");
@@ -217,6 +217,22 @@ main(int argc, char* argv[])
 	//	storageHelperC.SetAttribute("PrefixCommand", StringValue("/lacl/storage"));
 	//	storageHelperC.Install(Names::Find<Node>("Node7")); // last node
 
+        ndn::AppHelper userHelperA("ns3::ndn::User");
+		//userHelperA.SetAttribute("Frequency", StringValue("10"));
+		userHelperA.SetAttribute("Randomize", StringValue("exponential"));
+		//userHelperA.SetAttribute("Randomize", StringValue("uniform"));
+		userHelperA.SetPrefix("/lacl/data");
+        userHelperA.Install(nodes.Get(5));
+                userHelperA.Install(nodes.Get(8));
+                userHelperA.Install(nodes.Get(2));
+
+Simulator::Schedule(Seconds(1), ndn::LinkControlHelper::FailLink, nodes.Get(0), nodes.Get(1));
+
+
+//ndn::GlobalRoutingHelper::CalculateRoutes();
+ndn::GlobalRoutingHelper::CalculateAllPossibleRoutes();
+
+//Simulator::Schedule(Seconds(9), ndn::LinkControlHelper::UpLink, nodes.Get(0), nodes.Get(1));
  /*  Simulator::Schedule (Seconds (15), ndn::LinkControlHelper::FailLink, nodes.Get (6), nodes.Get (1));
     Simulator::Schedule (Seconds (15), ndn::LinkControlHelper::FailLink, nodes.Get (6), nodes.Get (5));
     Simulator::Schedule (Seconds (15), ndn::LinkControlHelper::FailLink, nodes.Get (6), nodes.Get (7));

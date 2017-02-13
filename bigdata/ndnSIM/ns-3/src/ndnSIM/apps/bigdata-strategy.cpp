@@ -146,7 +146,8 @@ BigDataStrategy::afterReceiveInterest(const Face& inFace,
 
 		// Check if this is a storage request
 		if (! m_replicated) {
-			std::string prefix = "/lacl/storage";
+			//std::string prefix = "/lacl/storage";
+			std::string prefix = "storage";
 			std::size_t place = interest.getName().toUri().find(prefix);
 			if (place == 0) {
 				NFD_LOG_DEBUG("Replication registered for " << interest.getName().toUri() << " from=" << inFace.getId());

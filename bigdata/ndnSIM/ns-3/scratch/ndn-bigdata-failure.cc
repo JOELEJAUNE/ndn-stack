@@ -161,6 +161,8 @@ main(int argc, char* argv[])
         //userHelperA.Install(nodes.Get(8));
 
 	ApplicationContainer app =  storageHelperA.Install(nodes.Get(1));
+
+	std::vector<ApplicationContainer> cont;
 		storageHelperA.Install(nodes.Get(4));
 		storageHelperA.Install(nodes.Get(6));
 		//storageHelperA.Install(nodes.Get(8));
