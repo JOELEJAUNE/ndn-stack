@@ -147,7 +147,7 @@ Consumer Requests Distribution               --> OK consumerRequests
    std::string delayValue = std::to_string(delay)+std::string("ms");
 
 
-	const int max = (const int) dimension * dimension;
+	const int max = (const int) dimension;
 
 
 	 // Setting default parameters for PointToPoint links and channels
@@ -200,7 +200,7 @@ Consumer Requests Distribution               --> OK consumerRequests
       unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
       std::default_random_engine generator (seed);
      // std::default_random_engine generator;
-      std::uniform_int_distribution<int> distribution(0,dimension*dimension);
+      std::uniform_int_distribution<int> distribution(0,dimension*dimension-1);
       //std::binomial_distribution<int> distribution(dimension*dimension, 0.3);
       //std::negative_binomial_distribution<int> distribution(dimension*dimension,0.7);
 
@@ -329,26 +329,24 @@ Consumer Requests Distribution               --> OK consumerRequests
             container.at(element).Start(Seconds(failureTime+failureDuration)); //restore
         //}
 
-
-
     }
 
     ndn::GlobalRoutingHelper::CalculateAllPossibleRoutes();
 
 
-	Simulator::Stop(Seconds(30.0));
+	Simulator::Stop(Seconds(1000.0));
 
 
 	ndn::L3RateTracer::InstallAll(std::string("../../bigdata/rate-trace-")
-		+std::to_string(replication)+std::string("_")
-		+std::to_string(nbStorages)+std::string("_")
-		+std::to_string(dimension)+std::string("_")
-		+std::to_string(nbSegments)+std::string(".txt"), Seconds(0.5));
+		//+std::to_string(replication)+std::string("_")
+		//+std::to_string(nbStorages)+std::string("_")
+		//+std::to_string(dimension)+std::string("_")
+		+std::to_string(runNumber)+std::string(".txt"), Seconds(0.5));
 	ndn::CsTracer::InstallAll(std::string("../../bigdata/cs-trace-")
-		+std::to_string(replication)+std::string("_")
-		+std::to_string(nbStorages)+std::string("_")
-		+std::to_string(dimension)+std::string("_")
-		+std::to_string(nbSegments)+std::string(".txt"), Seconds(0.5));
+		//+std::to_string(replication)+std::string("_")
+		//+std::to_string(nbStorages)+std::string("_")
+		//+std::to_string(dimension)+std::string("_")
+		+std::to_string(runNumber)+std::string(".txt"), Seconds(0.5));
 
 
 	Simulator::Run();
