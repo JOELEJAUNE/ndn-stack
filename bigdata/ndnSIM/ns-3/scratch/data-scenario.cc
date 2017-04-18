@@ -142,6 +142,15 @@ Consumer Requests Distribution               --> OK consumerRequests
 		+std::to_string(runNumber)+std::string(".txt")),
                MakeStringChecker ());
 
+    //set header
+    ns3::StringValue stringValue;
+    ns3::GlobalValue::GetValueByName ("myGlobal", stringValue);
+    string file = stringValue.Get ();
+    std::ofstream outfile;
+    outfile.open(file, std::ios_base::app);
+    outfile << "Time;Node;Type;Name;Hop" << std::endl;
+    outfile.close();
+
 
    std::string speedValue = std::to_string(speed)+std::string("Mbps");
    std::string delayValue = std::to_string(delay)+std::string("ms");
@@ -334,7 +343,7 @@ Consumer Requests Distribution               --> OK consumerRequests
     ndn::GlobalRoutingHelper::CalculateAllPossibleRoutes();
 
 
-	Simulator::Stop(Seconds(1000.0));
+	Simulator::Stop(Seconds(50.0));
 
 
 	ndn::L3RateTracer::InstallAll(std::string("../../bigdata/rate-trace-")

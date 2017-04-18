@@ -36,6 +36,12 @@
 #include <boost/ref.hpp>
 
 
+#include "core/logger.hpp"
+#include <iostream>
+#include <string>
+#include <fstream>
+#include "ns3/core-module.h"
+
 
 NS_LOG_COMPONENT_DEFINE("ndn.User");
 
@@ -245,7 +251,7 @@ User::OnData(shared_ptr<const Data> data)
 
   // This could be a problem......
   uint32_t seq = data->getName().at(-1).toSequenceNumber();
-  NS_LOG_INFO("< DATA for " << seq);
+  //NS_LOG_INFO("< DATA for " << seq);
 
   int hopCount = 0;
   auto ns3PacketTag = data->getTag<Ns3PacketTag>();
@@ -253,9 +259,21 @@ User::OnData(shared_ptr<const Data> data)
     FwHopCountTag hopCountTag;
     if (ns3PacketTag->getPacket()->PeekPacketTag(hopCountTag)) {
       hopCount = hopCountTag.Get();
-      NS_LOG_DEBUG("Hop count: " << hopCount);
+      //NS_LOG_DEBUG("Hop count: " << hopCount);
     }
   }
+
+  //log for analysis
+   ns3::StringValue stringValue;
+   ns3::GlobalValue::GetValueByName ("myGlobal", stringValue);
+   std::string file = stringValue.Get ();
+
+    std::ofstream outfile;
+    outfile.open(file, std::ios_base::app);
+    outfile << ns3::Simulator::Now().GetSeconds() << ";" << ns3::Simulator::GetContext () << ";data;" << data->getName().toUri() <<";"<< hopCount << std::endl;
+    outfile.close();
+
+
 
   SeqTimeoutsContainer::iterator entry = m_seqLastDelay.find(seq);
   if (entry != m_seqLastDelay.end()) {

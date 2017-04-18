@@ -120,7 +120,7 @@ BigDataStrategy::afterReceiveInterest(const Face& inFace,
    outfile.open(file, std::ios_base::app);
    NFD_LOG_DEBUG("INFORMATION::::::::" << interest.toUri() );
 
-    outfile << ns3::Simulator::Now().GetSeconds() << ";" << ns3::Simulator::GetContext () << ";" << interest.toUri() << std::endl;
+    outfile << ns3::Simulator::Now().GetSeconds() << ";" << ns3::Simulator::GetContext () << ";interest;" << interest.toUri() <<";"<< std::endl;
 
 
     outfile.close();

@@ -29,6 +29,12 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/ref.hpp>
 
+#include "core/logger.hpp"
+#include <iostream>
+#include <string>
+#include <fstream>
+#include "ns3/core-module.h"
+
 NS_LOG_COMPONENT_DEFINE("ndn.DataConsumer");
 
 namespace ns3 {
@@ -239,6 +245,22 @@ int DataConsumer::OnData(shared_ptr<const Data> data) {
 			// NS_LOG_DEBUG("Hop count: " << hopCount);
 		}
 	}
+
+	//log for analysis
+   ns3::StringValue stringValue;
+   ns3::GlobalValue::GetValueByName ("myGlobal", stringValue);
+   string file = stringValue.Get ();
+
+
+
+    std::ofstream outfile;
+   outfile.open(file, std::ios_base::app);
+
+
+    outfile << ns3::Simulator::Now().GetSeconds() << ";" << wrapper->getNode()->GetId() << ";data;" << data->getName().toUri() <<";"<< hopCount << std::endl;
+
+
+    outfile.close();
 
 	SeqTimeoutsContainer::iterator entry = m_seqLastDelay.find(seq);
 	if (entry != m_seqLastDelay.end()) {
