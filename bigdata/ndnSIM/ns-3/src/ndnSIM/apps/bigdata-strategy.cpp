@@ -149,10 +149,13 @@ BigDataStrategy::afterReceiveInterest(const Face& inFace,
 			//std::string prefix = "/lacl/storage";
 			std::string prefix = "storage";
 			std::size_t place = interest.getName().toUri().find(prefix);
-			if (place == 0) {
+		NS_LOG_DEBUG("Place "  << place);
+			if (place !=std::string::npos) {
 				NFD_LOG_DEBUG("Replication registered for " << interest.getName().toUri() << " from=" << inFace.getId());
 				NFD_LOG_INFO("Replication Request on " << inFace.getRemoteUri().toString() << " for " << interest.getName().toUri());
 				m_replicated = true;
+
+				NFD_LOG_DEBUG("ici replication value change to true");
 
 			}
 		}
