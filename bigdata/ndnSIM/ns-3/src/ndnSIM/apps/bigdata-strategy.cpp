@@ -147,7 +147,7 @@ BigDataStrategy::afterReceiveInterest(const Face& inFace,
 		// Check if this is a storage request
 		if (! m_replicated) {
 			//std::string prefix = "/lacl/storage";
-			std::string prefix = "storage";
+			std::string prefix = "compute";
 			std::size_t place = interest.getName().toUri().find(prefix);
 		NS_LOG_DEBUG("Place "  << place);
 			if (place !=std::string::npos) {

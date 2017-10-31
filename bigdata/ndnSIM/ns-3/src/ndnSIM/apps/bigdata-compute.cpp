@@ -33,8 +33,9 @@
 #include <vector>
 #include <iterator>
 #include <iostream>
-    #include <boost/algorithm/string.hpp>
-
+#include <boost/algorithm/string.hpp>
+#include "ns3/core-module.h" 
+#include <boost/thread/thread.hpp>
 
 NS_LOG_COMPONENT_DEFINE("ndn.Compute");
 
@@ -98,14 +99,14 @@ Compute::StopApplication()
 {
 	NS_LOG_FUNCTION_NOARGS();
 
-	NS_LOG_INFO("COMPUTE node(" << GetNode()->GetId() << ") Compute application Stopping "  );
+	NS_LOG_INFO("COMPUTE node(" << GetNode()->GetId() << ") Compute application Stopping ");
 
 	for (std::list<DataConsumer*>::iterator it=consumers.begin(); it!=consumers.end(); ++it){
 		delete (*it);
 		consumers.erase(it);
 	}
 	App::StopApplication();
-	NS_LOG_INFO("COMPUTE node(" << GetNode()->GetId() << ") Compute application stopped "  );
+	NS_LOG_INFO("COMPUTE node(" << GetNode()->GetId() << ") Compute application stopped ");
 }
 
 void Compute::OnDataRetrieved(DataConsumer* consumer){
@@ -114,7 +115,7 @@ void Compute::OnDataRetrieved(DataConsumer* consumer){
 		NS_LOG_INFO("COMPUTE node(" << GetNode()->GetId() << ") Compute NOT active ignoring the packet " << consumer->getInterestName().toUri() );
 		return;
 	}
-
+/*
 	if(!consumer->isCommand()){
 		// consumer->getInterestName()  /lacl/data ?
 		NS_LOG_DEBUG("COMPUTE node(" << GetNode()->GetId() << ") Data file " << consumer->getInterestName().toUri() <<" advertised and stored on the local storage" );
@@ -141,7 +142,7 @@ void Compute::OnDataRetrieved(DataConsumer* consumer){
 
 	}
 
-
+*/
 	NS_LOG_DEBUG("COMPUTE node(" << GetNode()->GetId() << ") Cleaning the Consumer "<< consumer->getInterestName().toUri() );
 	consumers.remove(consumer);
 	delete consumer;
@@ -215,12 +216,46 @@ Compute::OnTimeout(DataConsumer* consumer)
 
 						std::string toSend = code + data + "/" + to_string(i) + "/" + maxSeg + "/map/" + to_string(i);
 
-						//prepare to send an interest to retrieve the data
 
-						DataConsumer* dataConsumer = new DataConsumer(new  AppWrapperTemplate<Compute*> (this), toSend);
-						dataConsumer->setSeqMax(1);
-						consumers.push_front (dataConsumer);
-						Simulator::Schedule(Seconds(0.0), &DataConsumer::SendPacket, dataConsumer); 
+						//check if the name is advertized by the node, then the data is already available;
+
+						bool insideAd = false;
+						for (std::list<string>::iterator ad=adList.begin(); ad!=adList.end(); ++ad){
+							std::string value = *ad;
+							std::size_t position = value.find(toSend);
+							
+							//NS_LOG_INFO("Position : " << value);
+
+							if (position!=std::string::npos) {
+								
+								insideAd = true;
+								break;
+
+							}else{
+
+								insideAd = false;
+
+							}
+
+
+						}
+
+
+						if(insideAd){
+
+							NS_LOG_INFO("Interest already available : " << toSend);
+
+						}else{
+
+							//prepare to send an interest to retrieve the data
+
+							DataConsumer* dataConsumer = new DataConsumer(new  AppWrapperTemplate<Compute*> (this), toSend);
+							dataConsumer->setSeqMax(1);
+							consumers.push_front (dataConsumer);
+							Simulator::Schedule(Seconds(0.0), &DataConsumer::SendPacket, dataConsumer); 
+
+						}
+
 					}
 					
 			}
@@ -519,7 +554,7 @@ void Compute::OnInterest(shared_ptr<const Interest> interest) {
 		dataConsumer2->setSeqMax(1);
 		consumers.push_front (dataConsumer2);
 		Simulator::Schedule(Seconds(0.0), &DataConsumer::SendPacket, dataConsumer2);
-
+	
 
 	}
 
@@ -612,8 +647,15 @@ Compute::makeCompute(string name)
 
     NS_LOG_INFO("COMPUTE node(" << GetNode()->GetId() << ") start computation " << name);
 
-    //simulation for the computation
+    //simulation for the computation; use the shared variable for the code computation time to pause the prog
 
+
+	ns3::StringValue stringVal;
+   ns3::GlobalValue::GetValueByName ("myGlobalExec", stringVal);
+   string exeTime = stringVal.Get ();
+
+
+    boost::this_thread::sleep( boost::posix_time::seconds(stoi(exeTime)) );
     
     NS_LOG_INFO("COMPUTE node(" << GetNode()->GetId() << ") computation done" << name);
 
@@ -675,7 +717,7 @@ std::vector<std::string> Compute::nameSplit(std::string name){
     boost::split(part, rest, boost::is_any_of("/"));
     //vector contains:
     //5 segBegin; 6 segLast
-
+/*
 	size_t found = rest.find_last_of("/");
 	size_t t;
 	if(part[5]!=part[6]){
@@ -698,7 +740,8 @@ std::vector<std::string> Compute::nameSplit(std::string name){
 	   code = tmp.erase(tmp.find_first_of("%"));
 	   code = code.erase(code.find_last_of("/"));
 	}
-
+*/
+    code =  "/" + part[3] + "/" + part[8];
 	std::string dataN = "/" + part[3] + "/" + part[4] + "/" + part[5] + "/" + part[6];
 
 	std::string prefix = "/" + part[1] + "/" + part[2];
@@ -720,17 +763,25 @@ void
 Compute::reduceComputation(std::string name){
 
 
-	NS_LOG_DEBUG("COMPUTE node(" << GetNode()->GetId() << ") reduce in progress");
-
 	//split the map
 	std::vector<std::string> part;
    	std::string rest = name;
     boost::split(part, rest, boost::is_any_of("/"));
 
-    int total = stoi(part[6]);
+    uint32_t total = stoi(part[6])+1;
 
 
-    if(mapList.size()==total){
+    if(mapList.size()+1<total) {
+
+ 		NS_LOG_DEBUG("COMPUTE node(" << GetNode()->GetId() << ") reduce in progress");
+
+
+    	mapList.push_front(name);
+    	NS_LOG_DEBUG("MapList: " << mapList.size()+1 << " total: " << total);
+
+    }
+
+    if(mapList.size()+1==total){
 
     	NS_LOG_DEBUG("COMPUTE node(" << GetNode()->GetId() << ") reduce complete;");
 
@@ -752,12 +803,8 @@ Compute::reduceComputation(std::string name){
 
     	mapList.push_back("complete");
 
-
-    }else if(mapList.size()<total) {
-
-    	mapList.push_front(name);
-
-    }
+    	return;
+    } 
 
 
 
