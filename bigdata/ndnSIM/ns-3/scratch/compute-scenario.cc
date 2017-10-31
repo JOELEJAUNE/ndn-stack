@@ -312,7 +312,7 @@ number = dist(generator);
       ndn::GlobalRoutingHelper::CalculateAllPossibleRoutes();
 
 
-  Simulator::Stop(Seconds(100.0));
+  Simulator::Stop(Seconds(1000.0));
 
   ndn::L3RateTracer::InstallAll(std::string("../../bigdata/rate-trace-")
     //+std::to_string(replication)+std::string("_")
